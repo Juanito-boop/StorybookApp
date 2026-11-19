@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, ArrowLeft, Loader2, Repeat, AlertTriangle, RefreshCw, FileDown, Wand2, Cpu, Save, Volume2, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, Loader2, Repeat, AlertTriangle, RefreshCw, FileDown, Cpu, Save, Volume2, RotateCcw } from "lucide-react";
 import { api, mediaUrl, formatApiError, downloadPdf } from "@/lib/api";
 import { GENRE_BY_ID } from "@/lib/genres";
 import { Button } from "@/components/ui/button";
@@ -14,25 +14,25 @@ import { useSceneAudio } from "@/components/reader/useSceneAudio";
 
 function SceneImage({ scene, total }) {
   return (
-    <div className="parchment paper-grain rounded-2xl overflow-hidden relative">
-      <div className="relative aspect-square overflow-hidden" data-testid="reader-illustration">
+    <div className="parchment rounded-xl overflow-hidden relative">
+      <div className="relative aspect-square overflow-hidden bg-[#232325]" data-testid="reader-illustration">
         {scene?.image && !scene.regenerating ? (
           <img key={scene.image} src={mediaUrl(scene.image)} alt={`Escena ${scene.index}`} className="absolute inset-0 w-full h-full object-cover animate-scene-in" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 animate-pulse flex items-center justify-center">
-            <div className="text-amber-200/80 font-prose italic flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Ilustrando…</div>
+          <div className="absolute inset-0 bg-[#232325] flex items-center justify-center">
+            <div className="text-[#a1a1a6] font-sans-ui text-sm flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> Generando ilustración</div>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent pointer-events-none" />
-        <span data-testid="scene-badge" className="absolute top-4 left-4 text-[11px] uppercase tracking-[0.3em] text-amber-200/90 font-sans-ui bg-slate-950/60 border border-amber-400/30 rounded-full px-2.5 py-1">
-          Escena {scene?.index || 1} / {total}
-        </span>
+      </div>
+      <div className="flex items-center justify-between px-4 py-3 border-t border-[rgba(237,237,237,0.08)] text-xs font-sans-ui text-[#85858b]">
+        <span data-testid="scene-badge" className="tabular-nums">Escena {scene?.index || 1} de {total}</span>
+        <span className="tabular-nums">{scene?.index || 1} / {total}</span>
       </div>
     </div>
   );
 }
 
-function SceneWorkshop({ storyId, scene, onStoryChange, refresh }) {
+function SceneEditor({ storyId, scene, onStoryChange, refresh }) {
   const [draft, setDraft] = useState(scene.text);
   const [saving, setSaving] = useState(false);
   const [narrating, setNarrating] = useState(false);
@@ -68,9 +68,9 @@ function SceneWorkshop({ storyId, scene, onStoryChange, refresh }) {
   };
 
   return (
-    <section className="rounded-xl border border-amber-400/20 bg-slate-950/40 p-4" data-testid="scene-workshop">
-      <label htmlFor={`scene-text-${scene.index}`} className="text-xs uppercase tracking-[0.2em] text-amber-300/80 font-sans-ui">
-        Taller · editar esta escena
+    <section className="rounded-xl border border-[rgba(237,237,237,0.08)] bg-[#232325]/40 p-4" data-testid="scene-workshop">
+      <label htmlFor={`scene-text-${scene.index}`} className="text-sm text-[#a1a1a6] font-sans-ui">
+        Editar texto de la escena
       </label>
       <Textarea
         id={`scene-text-${scene.index}`}
@@ -80,35 +80,35 @@ function SceneWorkshop({ storyId, scene, onStoryChange, refresh }) {
         onChange={(e) => setDraft(e.target.value)}
         disabled={busy || saving}
         rows={5}
-        className="mt-2 bg-slate-950/60 border-amber-500/20 text-amber-50 font-prose leading-relaxed"
+        className="mt-2 bg-[#232325] border-[rgba(237,237,237,0.08)] text-[#ededed] font-prose text-lg leading-relaxed"
       />
-      <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-400 font-sans-ui">
-        <span>{draft.length}/2000 caracteres</span>
-        {scene.audio_stale && <span className="text-amber-200">La narración aún corresponde a la versión anterior.</span>}
+      <div className="mt-2 flex items-center justify-between gap-2 text-xs text-[#85858b] font-sans-ui flex-wrap">
+        <span className="tabular-nums">{draft.length}/2000 caracteres</span>
+        {scene.audio_stale && <span className="text-[#a1a1a6]">La narración corresponde a una versión anterior del texto.</span>}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button data-testid="scene-save-button" size="sm" onClick={saveText} disabled={!dirty || saving || busy}
-          className="bg-amber-400 hover:bg-amber-300 text-slate-950 disabled:opacity-40">
-          {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+          className="bg-[#ededed] hover:bg-[#d4d4d4] text-[#141415] disabled:opacity-40">
+          {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" strokeWidth={1.5} /> : <Save className="h-4 w-4 mr-1" strokeWidth={1.5} />}
           Guardar texto
         </Button>
         <Button data-testid="scene-narrate-button" size="sm" variant="outline" onClick={narrate}
           disabled={dirty || saving || narrating || busy}
-          className="border-amber-400/30 text-amber-100 bg-transparent hover:bg-amber-400/10 disabled:opacity-40">
-          {narrating || scene.audio_regenerating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Volume2 className="h-4 w-4 mr-1" />}
-          {scene.audio_regenerating ? "Narrando…" : "Actualizar narración"}
+          className="border-[rgba(237,237,237,0.16)] text-[#ededed] bg-transparent hover:bg-[#232325] disabled:opacity-40">
+          {narrating || scene.audio_regenerating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" strokeWidth={1.5} /> : <Volume2 className="h-4 w-4 mr-1" strokeWidth={1.5} />}
+          {scene.audio_regenerating ? "Narrando" : "Actualizar narración"}
         </Button>
       </div>
-      {scene.audio_error && <p role="alert" className="mt-2 text-sm text-rose-300">{scene.audio_error}</p>}
+      {scene.audio_error && <p role="alert" className="mt-2 text-sm text-[#e5484d]">{scene.audio_error}</p>}
       {!!scene.text_versions?.length && (
-        <div className="mt-4 border-t border-white/10 pt-3">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-400 font-sans-ui">Versiones anteriores</div>
+        <div className="mt-4 border-t border-[rgba(237,237,237,0.08)] pt-3">
+          <div className="text-xs text-[#85858b] font-sans-ui">Versiones anteriores</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {scene.text_versions.map((version, index) => (
               <Button key={`${version.saved_at}-${index}`} size="sm" variant="ghost"
                 onClick={() => setDraft(version.text)} disabled={busy || saving}
-                className="text-amber-200/80 hover:bg-amber-400/10">
-                <RotateCcw className="h-3.5 w-3.5 mr-1" /> Restaurar versión {index + 1}
+                className="text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#232325] h-8 px-2">
+                <RotateCcw className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} /> Restaurar versión {index + 1}
               </Button>
             ))}
           </div>
@@ -123,7 +123,7 @@ export default function StoryReader({ publicToken }) {
   const navigate = useNavigate();
   const [story, setStory] = useState(null);
   const [sceneIdx, setSceneIdx] = useState(0);
-  const [autoplay, setAutoplay] = useState(false);
+  const [autoplay, setAutoplay] = useState(true);
   const owner = !publicToken;
   const endpoint = owner ? `/stories/${id}` : `/public/stories/${publicToken}`;
 
@@ -132,7 +132,7 @@ export default function StoryReader({ publicToken }) {
       const { data } = await api.get(endpoint);
       setStory(data);
     } catch {
-      toast.error(owner ? "No encontramos ese cuento en tu biblioteca." : "Este enlace no existe o fue desactivado.");
+      toast.error(owner ? "No se encontró ese cuento en tu biblioteca." : "Este enlace no existe o fue desactivado.");
       navigate(owner ? "/library" : "/");
     }
   }, [endpoint, owner, navigate]);
@@ -165,7 +165,6 @@ export default function StoryReader({ publicToken }) {
   useEffect(() => {
     const onKey = (e) => {
       const t = e.target;
-      // no robar teclas a sliders, campos de texto ni botones (la barra espaciadora activa botones)
       if (e.defaultPrevented || t.closest?.('[role="slider"], input, textarea, button, a, [contenteditable="true"]')) return;
       if (e.key === "ArrowLeft") goPrev();
       else if (e.key === "ArrowRight") goNext();
@@ -180,58 +179,61 @@ export default function StoryReader({ publicToken }) {
     catch (e) { toast.error(formatApiError(e.response?.data?.detail)); }
   };
   const regen = async () => {
-    try { await api.post(`/stories/${id}/scenes/${scene.index}/regenerate`, {}); toast.success("Reilustrando escena…"); load(); }
+    try { await api.post(`/stories/${id}/scenes/${scene.index}/regenerate`, {}); toast.success("Reilustrando escena"); load(); }
     catch (e) { toast.error(formatApiError(e.response?.data?.detail)); }
   };
 
   if (!story) {
-    return <div className="min-h-[60vh] flex items-center justify-center text-amber-200/80 font-prose"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Desplegando las páginas…</div>;
+    return <div className="min-h-[60vh] flex items-center justify-center text-[#a1a1a6] font-sans-ui text-sm"><Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} /> Cargando cuento</div>;
   }
 
   return (
-    <main className="relative max-w-7xl mx-auto px-5 sm:px-8 py-8">
-      <div className="flex items-center justify-between gap-4 flex-wrap animate-fade-up">
+    <main className="max-w-7xl mx-auto px-5 sm:px-8 py-8">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         {owner ? (
-          <Link to="/library" data-testid="reader-back-to-library" className="inline-flex items-center gap-2 text-amber-300/80 hover:text-amber-200 font-sans-ui text-sm">
-            <ArrowLeft className="h-4 w-4" /> Volver a mi biblioteca
+          <Link to="/library" data-testid="reader-back-to-library" className="inline-flex items-center gap-2 text-[#a1a1a6] hover:text-[#ededed] font-sans-ui text-sm transition-colors">
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} /> Biblioteca
           </Link>
         ) : (
-          <span data-testid="public-reader-label" className="text-amber-300/80 font-sans-ui text-sm">Cuento compartido · Storybook</span>
+          <span data-testid="public-reader-label" className="text-[#a1a1a6] font-sans-ui text-sm">Cuento compartido</span>
         )}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="px-2.5 py-1 rounded-full border text-xs font-sans-ui" style={{ color: genre.color, borderColor: `${genre.color}80`, background: `${genre.color}1a` }}>
-            <genre.Icon className="inline h-3 w-3 mr-1" />{genre.name}
+          <span className="px-2.5 py-1 rounded-lg border border-[rgba(237,237,237,0.08)] bg-[#232325] text-xs font-sans-ui text-[#a1a1a6] inline-flex items-center gap-1.5">
+            <genre.Icon className="h-3.5 w-3.5" strokeWidth={1.5} />{genre.name}
+          </span>
+          <span className="px-2.5 py-1 rounded-lg border border-[rgba(237,237,237,0.08)] bg-[#232325] text-xs font-sans-ui text-[#85858b] tabular-nums">
+            {available}/{total} escenas
           </span>
           {owner ? <StoryActions story={story} onChange={setStory} /> : (
-            <Button data-testid="public-pdf-button" size="sm" variant="outline" onClick={() => downloadPdf(`/public/stories/${publicToken}/pdf`, story.title)} className="border-amber-400/30 text-amber-100 bg-transparent hover:bg-amber-400/10">
-              <FileDown className="h-4 w-4 mr-1" /> PDF
+            <Button data-testid="public-pdf-button" size="sm" variant="outline" onClick={() => downloadPdf(`/public/stories/${publicToken}/pdf`, story.title)} className="border-[rgba(237,237,237,0.16)] text-[#ededed] bg-transparent hover:bg-[#232325]">
+              <FileDown className="h-4 w-4 mr-1" strokeWidth={1.5} /> PDF
             </Button>
           )}
         </div>
       </div>
 
-      <h1 data-testid="story-title" className="font-display text-3xl sm:text-4xl lg:text-5xl text-amber-100 leading-tight mt-4 animate-fade-up">{story.title}</h1>
-      {story.protagonist && <p className="font-prose italic text-slate-400 mt-2 text-lg">Protagonista: {story.protagonist}</p>}
+      <h1 data-testid="story-title" className="font-sans-ui text-3xl sm:text-4xl font-medium text-[#ededed] leading-tight mt-4">{story.title}</h1>
+      {story.protagonist && <p className="font-sans-ui text-sm text-[#a1a1a6] mt-2">Protagonista: {story.protagonist}</p>}
 
       {busy && story.status !== "done" && <div className="mt-6"><GenerationProgress story={story} /></div>}
 
       {story.status === "error" && (
-        <div data-testid="generation-error" className="mt-6 rounded-2xl border border-rose-500/40 bg-rose-950/30 p-5 flex items-start justify-between gap-4 flex-wrap">
+        <div data-testid="generation-error" className="mt-6 rounded-xl border border-[#e5484d]/30 bg-[#e5484d]/10 p-5 flex items-start justify-between gap-4 flex-wrap">
           <div className="flex gap-3">
-            <AlertTriangle className="h-5 w-5 text-rose-300 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-[#e5484d] mt-0.5" strokeWidth={1.5} />
             <div>
-              <div className="font-display text-lg text-rose-100">La generación se interrumpió</div>
-              <div className="text-sm text-rose-200/80 font-sans-ui mt-1 break-all">{story.error}</div>
+              <div className="font-sans-ui text-base font-medium text-[#ededed]">La generación se interrumpió</div>
+              <div className="text-sm text-[#a1a1a6] font-sans-ui mt-1 break-all">{story.error}</div>
             </div>
           </div>
           {owner && (
             <div className="flex items-center gap-2 flex-wrap">
-              <Button data-testid="generation-retry-button" onClick={() => retry()} className="bg-amber-400 hover:bg-amber-300 text-slate-950">
-                <RefreshCw className="h-4 w-4 mr-1" /> Reintentar
+              <Button data-testid="generation-retry-button" onClick={() => retry()} className="bg-[#ededed] hover:bg-[#d4d4d4] text-[#141415]">
+                <RefreshCw className="h-4 w-4 mr-1" strokeWidth={1.5} /> Reintentar
               </Button>
               {story.config.profile !== "ligero" && (
-                <Button data-testid="generation-retry-light-button" onClick={() => retry("ligero")} variant="outline" className="border-amber-400/40 text-amber-100 bg-transparent hover:bg-amber-400/10">
-                  <Cpu className="h-4 w-4 mr-1" /> Reintentar con perfil ligero
+                <Button data-testid="generation-retry-light-button" onClick={() => retry("ligero")} variant="outline" className="border-[rgba(237,237,237,0.16)] text-[#ededed] bg-transparent hover:bg-[#232325]">
+                  <Cpu className="h-4 w-4 mr-1" strokeWidth={1.5} /> Reintentar con perfil ligero
                 </Button>
               )}
             </div>
@@ -240,61 +242,65 @@ export default function StoryReader({ publicToken }) {
       )}
 
       {scene ? (
-        <div key={sceneIdx} className="mt-8 grid lg:grid-cols-[1fr_1fr] gap-8 items-start animate-scene-in">
+        <div key={sceneIdx} className="mt-8 grid lg:grid-cols-[1fr_1fr] gap-8 items-start">
           <div>
             <SceneImage scene={scene} total={total} />
             {owner && story.status === "done" && (
-              <Button data-testid="scene-regenerate-button" size="sm" variant="ghost" onClick={regen} disabled={scene.regenerating} className="mt-3 text-amber-200/80 hover:bg-white/5">
-                <Wand2 className="h-4 w-4 mr-1" /> Reilustrar esta escena
+              <Button data-testid="scene-regenerate-button" size="sm" variant="ghost" onClick={regen} disabled={scene.regenerating} className="mt-3 text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#232325]">
+                {scene.regenerating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" strokeWidth={1.5} /> : <RefreshCw className="h-4 w-4 mr-1" strokeWidth={1.5} />} Reilustrar esta escena
               </Button>
             )}
           </div>
-          <div className="parchment paper-grain rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
+          <div className="parchment rounded-xl p-6 sm:p-8 flex flex-col gap-6">
             <div>
-              <div className="text-xs uppercase tracking-[0.3em] text-amber-300/70 font-sans-ui">Fragmento {scene.index}</div>
-              <p data-testid="reader-scene-text" className="mt-3 font-prose text-xl sm:text-2xl text-slate-100/95 leading-relaxed">{scene.text}</p>
+              <div className="text-xs text-[#85858b] font-sans-ui tabular-nums">Escena {scene.index} de {total}</div>
+              <p data-testid="reader-scene-text" className="mt-3 font-prose text-xl sm:text-2xl text-[#ededed] leading-relaxed">{scene.text}</p>
             </div>
             {owner && story.status === "done" && (
-              <SceneWorkshop storyId={story.id} scene={scene} onStoryChange={setStory} refresh={load} />
+              <SceneEditor storyId={story.id} scene={scene} onStoryChange={setStory} refresh={load} />
             )}
             <AudioPanel audio={audio} scene={scene} />
-            <label className="flex items-center justify-between gap-3 rounded-xl border border-amber-400/20 bg-slate-950/50 p-4 cursor-pointer">
-              <span className="flex items-center gap-2 text-amber-200 font-sans-ui text-sm"><Repeat className="h-4 w-4" /> Reproducción automática
-                <span className="text-xs text-amber-300/60">narra y pasa de escena sola</span></span>
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(237,237,237,0.08)] bg-[#232325]/40 px-4 py-3">
+              <div className="min-w-0">
+                <div className="text-sm font-sans-ui text-[#ededed]">Reproducción automática</div>
+                <div className="text-xs font-sans-ui text-[#85858b]">Narra y pasa a la siguiente escena</div>
+              </div>
               <Switch data-testid="autoplay-switch" checked={autoplay} disabled={story.status !== "done"} onCheckedChange={(v) => { setAutoplay(v); if (v) audio.play(); else audio.stopAll(); }} />
-            </label>
+            </div>
           </div>
         </div>
       ) : !busy ? null : (
-        <div className="mt-8 font-prose italic text-amber-200/70">La primera escena aparecerá aquí en cuanto el modelo termine de escribirla…</div>
+        <div className="mt-8 font-sans-ui text-sm text-[#a1a1a6]">La primera escena aparecerá aquí cuando el modelo termine de escribirla.</div>
       )}
 
       {available > 0 && (
         <div className="mt-8 flex items-center justify-between gap-4 flex-wrap">
-          <Button data-testid="scene-prev-button" onClick={goPrev} disabled={sceneIdx === 0} variant="outline" className="border-amber-400/40 text-amber-100 bg-transparent hover:bg-amber-400/10 disabled:opacity-40">
-            <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+          <Button data-testid="scene-prev-button" onClick={goPrev} disabled={sceneIdx === 0} variant="outline" className="border-[rgba(237,237,237,0.16)] text-[#ededed] bg-transparent hover:bg-[#232325] disabled:opacity-40">
+            <ChevronLeft className="h-4 w-4 mr-1" strokeWidth={1.5} /> Anterior
           </Button>
           <div className="flex items-center gap-2" data-testid="scene-indicator">
             {[0, 1, 2, 3, 4].map((i) => {
               const sc = story.scenes[i];
+              const active = i === sceneIdx;
               return (
                 <button key={i} disabled={!sc} onClick={() => setSceneIdx(i)} data-testid={`scene-dot-${i + 1}`} aria-label={`Ir a escena ${i + 1}`}
-                  className={`relative h-12 w-12 rounded-lg overflow-hidden border transition-all ${i === sceneIdx ? "border-amber-300 scale-110 shadow-[0_0_0_2px_rgba(234,179,8,0.35)]" : "border-white/10 opacity-70 hover:opacity-100"} disabled:opacity-25`}>
-                  {sc?.image ? <img src={mediaUrl(sc.image)} alt="" className="h-full w-full object-cover" /> : <span className="text-xs text-amber-200/70 font-sans-ui">{i + 1}</span>}
+                  className={`relative h-12 w-12 rounded-lg overflow-hidden border transition-colors ${active ? "border-[#ededed]/40" : "border-[rgba(237,237,237,0.08)] hover:border-[rgba(237,237,237,0.16)]"} disabled:opacity-30 bg-[#232325]`}>
+                  {sc?.image ? <img src={mediaUrl(sc.image)} alt="" className="h-full w-full object-cover" /> : <span className="text-xs text-[#85858b] font-sans-ui tabular-nums">{i + 1}</span>}
+                  {active && <span className="absolute bottom-0 inset-x-0 h-0.5 bg-[#ededed]" />}
                 </button>
               );
             })}
           </div>
-          <Button data-testid="scene-next-button" onClick={goNext} disabled={sceneIdx >= available - 1} className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-medium disabled:opacity-40">
-            Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+          <Button data-testid="scene-next-button" onClick={goNext} disabled={sceneIdx >= available - 1} className="bg-[#ededed] hover:bg-[#d4d4d4] text-[#141415] font-medium disabled:opacity-40">
+            Siguiente <ChevronRight className="h-4 w-4 ml-1" strokeWidth={1.5} />
           </Button>
         </div>
       )}
 
-      <p data-testid="reader-provenance-note" className="mt-10 text-xs font-sans-ui text-slate-500 leading-relaxed max-w-3xl">
-        Generado 100% en local: texto con {story.config.text_model}, ilustraciones con {story.config.image_model} (semilla {story.config.seed}
-        {story.config.ip_adapter ? ", IP-Adapter" : ""}), voz con {story.config.tts_model} y ambiente sonoro sintetizado proceduralmente
-        (sin archivos de terceros). Atajos: ← → escenas · espacio reproducir/pausar.
+      <p data-testid="reader-provenance-note" className="mt-10 text-xs font-sans-ui text-[#85858b] leading-relaxed max-w-3xl">
+        Generado en local: texto con {story.config.text_model}, ilustraciones con {story.config.image_model} (semilla {story.config.seed}
+        {story.config.ip_adapter ? ", IP-Adapter" : ""}), voz con {story.config.tts_model} y ambiente sonoro sintetizado proceduralmente.
+        Atajos: ← → escenas, espacio reproducir o pausar.
       </p>
     </main>
   );

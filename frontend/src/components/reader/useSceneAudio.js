@@ -51,10 +51,15 @@ export function useSceneAudio(scene, { autoplay, onVoiceEnded }) {
 
   useEffect(() => {
     const a = ambient.current;
-    if (!ambientSrc) { a.pause(); return; }
-    if (a.src !== ambientSrc) a.src = ambientSrc;
-    if (ambientOn || autoplay) { a.play().catch(() => {}); if (!ambientOn) setAmbientOn(true); }
-  }, [ambientSrc, autoplay, ambientOn]);
+    if (!ambientSrc) { a.pause(); a.removeAttribute("src"); return; }
+    const next = ambientSrc;
+    if (a.getAttribute("src") !== next && a.src !== next) a.src = next;
+    if (ambientOn) { a.play().catch(() => {}); } else { a.pause(); }
+  }, [ambientSrc, ambientOn]);
+
+  useEffect(() => {
+    if (autoplay && ambientSrc) setAmbientOn(true);
+  }, [autoplay, ambientSrc]);
 
   useEffect(() => { voice.current.volume = voiceVolume; }, [voiceVolume]);
   useEffect(() => { ambient.current.volume = ambientVolume; }, [ambientVolume]);
@@ -69,10 +74,9 @@ export function useSceneAudio(scene, { autoplay, onVoiceEnded }) {
   }, []);
   const seek = useCallback((t) => { voice.current.currentTime = t; setTime(t); }, []);
   const toggleAmbient = useCallback(() => {
-    const a = ambient.current;
-    if (!a.src) return;
-    if (ambientOn) { a.pause(); setAmbientOn(false); } else { a.play().catch(() => {}); setAmbientOn(true); }
-  }, [ambientOn]);
+    if (!ambient.current?.src && !ambientSrc) return;
+    setAmbientOn((v) => !v);
+  }, [ambientSrc]);
   const stopAll = useCallback(() => { stop(); ambient.current.pause(); setAmbientOn(false); }, [stop]);
 
   return {

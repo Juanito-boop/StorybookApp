@@ -1,10 +1,10 @@
 import React from "react";
-import { Check, Loader2, Feather, Image as ImageIcon, AudioLines, Hourglass } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
-function Step({ done, active, Icon, label }) {
+function Step({ done, active, label }) {
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-sans-ui ${done ? "text-emerald-300" : active ? "text-amber-200" : "text-slate-500"}`}>
-      {done ? <Check className="h-3 w-3" /> : active ? <Loader2 className="h-3 w-3 animate-spin" /> : <Icon className="h-3 w-3" />}
+    <span className={`inline-flex items-center gap-1 text-xs font-sans-ui ${done ? "text-[#ededed]" : active ? "text-[#a1a1a6]" : "text-[#85858b]"}`}>
+      {done ? <Check className="h-3.5 w-3.5" strokeWidth={1.5} /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <span className="h-3.5 w-3.5 inline-block" />}
       {label}
     </span>
   );
@@ -12,38 +12,37 @@ function Step({ done, active, Icon, label }) {
 
 export function GenerationProgress({ story }) {
   const pct = Math.round((story.progress / story.total_steps) * 100);
-  const phase = story.progress < 6 ? "text" : story.progress < 11 ? "image" : "audio";
+  const scenes = story.scenes || [];
   return (
-    <div data-testid="generation-progress" className="parchment paper-grain rounded-2xl p-5 sm:p-6 animate-fade-up">
+    <div data-testid="generation-progress" className="parchment rounded-xl p-5 sm:p-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="relative h-10 w-10">
-            <div className="absolute inset-0 rounded-full border-2 border-amber-400/20" />
-            <div className="absolute inset-0 rounded-full border-2 border-amber-400 border-t-transparent spin-slow" />
-            {story.status === "queued" ? <Hourglass className="absolute inset-0 m-auto h-4 w-4 text-amber-300" /> : <Feather className="absolute inset-0 m-auto h-4 w-4 text-amber-300" />}
+        <div>
+          <div data-testid="generation-stage" className="font-sans-ui text-base font-medium text-[#ededed]">
+            {story.status === "queued" ? `En cola · posición ${story.queue_position || 1}` : story.stage}
           </div>
-          <div>
-            <div data-testid="generation-stage" className="font-display text-lg text-amber-100">
-              {story.status === "queued" ? `En cola · posición ${story.queue_position || 1}` : story.stage}
-            </div>
-            <div className="text-xs font-sans-ui text-slate-400">Generando localmente con modelos abiertos · puedes salir y volver más tarde</div>
-          </div>
+          <div className="text-sm font-sans-ui text-[#a1a1a6] mt-1">Generando localmente con modelos abiertos. Puedes salir y volver más tarde.</div>
         </div>
-        <div data-testid="generation-percent" className="font-display text-3xl text-amber-300">{pct}%</div>
+        <div data-testid="generation-percent" className="font-sans-ui text-2xl text-[#ededed] tabular-nums">{pct}%</div>
       </div>
-      <div className="mt-4 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-700" style={{ width: `${pct}%` }} />
+      <div className="mt-4 h-1.5 bg-[#232325] rounded-full overflow-hidden">
+        <div className="h-full bg-[#ededed]/70 transition-[width] duration-500" style={{ width: `${pct}%` }} />
       </div>
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-5 gap-2">
         {[0, 1, 2, 3, 4].map((i) => {
-          const sc = story.scenes[i];
+          const sc = scenes[i];
+          const textDone = !!sc;
+          const imageDone = !!sc?.image;
+          const audioDone = !!sc?.audio;
+          const textActive = !textDone && scenes.length === i && story.status !== "queued";
+          const imageActive = textDone && !imageDone;
+          const audioActive = imageDone && !audioDone;
           return (
-            <div key={i} className="rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2">
-              <div className="text-xs font-sans-ui text-amber-200/90 mb-1">Escena {i + 1}</div>
-              <div className="flex flex-wrap gap-x-2 gap-y-1">
-                <Step done={!!sc} active={!sc && phase === "text" && story.scenes.length === i} Icon={Feather} label="texto" />
-                <Step done={!!sc?.image} active={phase === "image" && sc && !sc.image && story.scenes.filter((s) => s.image).length === i} Icon={ImageIcon} label="imagen" />
-                <Step done={!!sc?.audio} active={phase === "audio" && sc && !sc.audio && story.scenes.filter((s) => s.audio).length === i} Icon={AudioLines} label="audio" />
+            <div key={i} className="rounded-lg border border-[rgba(237,237,237,0.08)] bg-[#232325]/40 px-3 py-2">
+              <div className="text-xs font-sans-ui text-[#a1a1a6] mb-2 tabular-nums">Escena {i + 1}</div>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                <Step done={textDone} active={textActive} label="texto" />
+                <Step done={imageDone} active={imageActive} label="imagen" />
+                <Step done={audioDone} active={audioActive} label="audio" />
               </div>
             </div>
           );

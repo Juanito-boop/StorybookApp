@@ -41,72 +41,82 @@ def generate(cfg: dict, idea: str, genre: str, folder: Path, key: str, emit: Cal
     t_start = time.time()
     emit(status="generating", stage="Planificando personajes y mundo", progress=0, scenes=[], error=None, started_at=now())
 
-    # ---- 1. text ----
-    t = time.time()
+    t_plan = time.time()
     plan, n = text_gen.plan_story(cfg, idea, genre)
     metrics["tokens"] += n
+    metrics["text_s"] += time.time() - t_plan
     emit(title=plan["title"], plan=plan, progress=1)
 
     scenes, previous = [], []
-    for i in range(5):
-        emit(stage=f"Escribiendo escena {i + 1} de 5")
-        sc, n = text_gen.write_scene(cfg, idea, genre, plan, previous, i)
-        metrics["tokens"] += n
-        sound = sc["sound_tag"] or GENRE_DEFAULT_SOUND[genre]
-        scenes.append({
-            "index": i + 1, "text": sc["text"], "image_en": sc["image_en"], "raw": sc["raw"],
-            "sound_tag": sound, "sound_name": SOUND_TAGS[sound],
-            "image": None, "image_prompt": None, "image_seed": None,
-            "audio": None, "audio_duration": None, "ambient": None,
-        })
-        metrics["scene_words"].append(len(sc["text"].split()))
-        previous.append(sc["text"])
-        emit(scenes=scenes, progress=2 + i)
-    metrics["text_s"] = round(time.time() - t, 2)
-    if not keep_models_loaded():
-        models.unload("llm:")
-
-    # ---- 2. images ----
     ref_image, image_paths = None, []
-    for i, scene in enumerate(scenes):
-        emit(stage=f"Ilustrando escena {i + 1} de 5")
-        seed = image_seed(cfg, i)
-        prompt = image_gen.build_prompt(genre, plan, scene["image_en"], cfg["consistency"])
-        name = f"scene_{i + 1}_{seed}.jpg"
-        t = time.time()
-        img = image_gen.generate(cfg, prompt, seed, str(folder / name), ref_image=ref_image)
-        if i == 0 and cfg.get("ip_adapter"):
-            ref_image = img  # the first illustration defines the character for the rest
-        metrics["image_s"].append(round(time.time() - t, 2))
-        image_paths.append(str(folder / name))
-        scene.update(image=media_url(key, name), image_prompt=prompt, image_seed=seed)
-        emit(scenes=scenes, progress=7 + i, cover=scenes[0]["image"])
-    if not keep_models_loaded():
-        models.unload("img:")
+    progress = 1
+    keep_loaded = keep_models_loaded()
+    try:
+        for i in range(5):
+            emit(stage=f"Escribiendo escena {i + 1} de 5")
+            t = time.time()
+            sc, n = text_gen.write_scene(cfg, idea, genre, plan, previous, i)
+            metrics["text_s"] += time.time() - t
+            metrics["tokens"] += n
+            if not keep_loaded:
+                models.unload("llm:")
+            sound = sc["sound_tag"] or GENRE_DEFAULT_SOUND[genre]
+            scene = {
+                "index": i + 1, "text": sc["text"], "image_en": sc["image_en"], "raw": sc["raw"],
+                "sound_tag": sound, "sound_name": SOUND_TAGS[sound],
+                "image": None, "image_prompt": None, "image_seed": None,
+                "audio": None, "audio_duration": None, "ambient": None,
+            }
+            metrics["scene_words"].append(len(sc["text"].split()))
+            previous.append(sc["text"])
+            scenes.append(scene)
+            progress += 1
+            emit(scenes=scenes, progress=progress)
 
-    # ---- 3. voice + ambient ----
-    for i, scene in enumerate(scenes):
-        emit(stage=f"Narrando y ambientando escena {i + 1} de 5")
-        t = time.time()
-        dur = tts_gen.synthesize(cfg["tts_model"], scene["text"], str(folder / f"voice_{i + 1}.wav"), cfg["seed"])
-        metrics["tts_s"].append(round(time.time() - t, 2))
-        metrics["audio_s"].append(dur)
-        t = time.time()
-        ambient_gen.generate(scene["sound_tag"], GENRE_DEFAULT_SOUND[genre], cfg["seed"] + i, str(folder / f"ambient_{i + 1}.wav"))
-        metrics["ambient_s"].append(round(time.time() - t, 2))
-        scene.update(audio=media_url(key, f"voice_{i + 1}.wav"), audio_duration=dur,
-                     ambient=media_url(key, f"ambient_{i + 1}.wav"))
-        emit(scenes=scenes, progress=12 + i)
-    if not keep_models_loaded():
-        models.unload("tts:")
+            emit(stage=f"Ilustrando escena {i + 1} de 5")
+            seed = image_seed(cfg, i)
+            prompt = image_gen.build_prompt(genre, plan, scene["image_en"], cfg["consistency"])
+            name = f"scene_{i + 1}_{seed}.jpg"
+            t = time.time()
+            img = image_gen.generate(cfg, prompt, seed, str(folder / name), ref_image=ref_image)
+            if i == 0 and cfg.get("ip_adapter"):
+                ref_image = img
+            metrics["image_s"].append(round(time.time() - t, 2))
+            image_paths.append(str(folder / name))
+            scene.update(image=media_url(key, name), image_prompt=prompt, image_seed=seed)
+            progress += 1
+            if not keep_loaded:
+                models.unload("img:")
+            emit(scenes=scenes, progress=progress, cover=scenes[0]["image"])
 
-    # ---- 4. objective consistency metric (never blocks the story) ----
+            emit(stage=f"Narrando y ambientando escena {i + 1} de 5")
+            t = time.time()
+            dur = tts_gen.synthesize(cfg["tts_model"], scene["text"], str(folder / f"voice_{i + 1}.wav"), cfg["seed"])
+            metrics["tts_s"].append(round(time.time() - t, 2))
+            metrics["audio_s"].append(dur)
+            t = time.time()
+            ambient_gen.generate(scene["sound_tag"], GENRE_DEFAULT_SOUND[genre], cfg["seed"] + i, str(folder / f"ambient_{i + 1}.wav"))
+            metrics["ambient_s"].append(round(time.time() - t, 2))
+            scene.update(audio=media_url(key, f"voice_{i + 1}.wav"), audio_duration=dur,
+                         ambient=media_url(key, f"ambient_{i + 1}.wav"))
+            progress += 1
+            if not keep_loaded:
+                models.unload("tts:")
+            emit(scenes=scenes, progress=progress)
+    finally:
+        if not keep_loaded:
+            models.unload("llm:")
+            models.unload("img:")
+            models.unload("tts:")
+
+    metrics["text_s"] = round(metrics["text_s"], 2)
+
     emit(stage="Midiendo consistencia visual")
     try:
         t = time.time()
         metrics.update(consistency.clip_scores(image_paths))
         metrics["clip_s"] = round(time.time() - t, 2)
-    except Exception as exc:  # CLIP missing in the offline cache, etc.
+    except Exception as exc:
         log.warning("CLIP metric skipped: %s", exc)
         metrics.update(clip_mean=None, clip_min=None, clip_vs_first=[])
     finally:

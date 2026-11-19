@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FlaskConical, Download, Cpu, HardDrive, Loader2, Play, GitCompareArrows } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 import { api, mediaUrl, formatApiError } from "@/lib/api";
 import { GENRE_BY_ID, GENRE_LIST } from "@/lib/genres";
@@ -36,20 +36,21 @@ function exportCsv(rows) {
 function SystemCard({ sys }) {
   if (!sys) return null;
   return (
-    <div data-testid="system-card" className="parchment paper-grain rounded-2xl p-6 grid sm:grid-cols-3 gap-6">
+    <div data-testid="system-card" className="parchment rounded-xl p-6 grid sm:grid-cols-3 gap-6">
       <div>
-        <div className="text-xs uppercase tracking-[0.25em] text-amber-300/70 font-sans-ui flex items-center gap-2"><Cpu className="h-3.5 w-3.5" /> Dispositivo</div>
-        <div data-testid="system-device" className="font-display text-2xl text-amber-100 mt-1">{sys.device === "cuda" ? sys.gpu : "CPU"}</div>
-        <div className="text-xs text-slate-400 font-sans-ui">
-          {sys.vram_gb ? `${sys.vram_gb} GB VRAM · ` : ""}PyTorch {sys.torch || "—"} · perfil por defecto: {sys.default_profile}
+        <div className="text-sm text-[#85858b] font-sans-ui">Dispositivo</div>
+        <div data-testid="system-device" className="font-sans-ui text-xl font-medium text-[#ededed] mt-1">{sys.device === "cuda" ? sys.gpu : "CPU"}</div>
+        <div className="text-sm text-[#a1a1a6] font-sans-ui mt-1">
+          {sys.vram_gb ? `${sys.vram_gb} GB VRAM · ` : ""}PyTorch {sys.torch || "—"}
         </div>
-        <div className="text-xs text-slate-400 font-sans-ui mt-1">Modo sin conexión: {sys.offline ? "activado" : "desactivado"} · cola: {sys.queue_size}</div>
+        <div className="text-sm text-[#a1a1a6] font-sans-ui mt-1">Perfil por defecto: {sys.default_profile}</div>
+        <div className="text-sm text-[#a1a1a6] font-sans-ui mt-1">Modo sin conexión: {sys.offline ? "activado" : "desactivado"} · cola: <span className="tabular-nums">{sys.queue_size}</span></div>
       </div>
       <div className="sm:col-span-2">
-        <div className="text-xs uppercase tracking-[0.25em] text-amber-300/70 font-sans-ui flex items-center gap-2"><HardDrive className="h-3.5 w-3.5" /> Modelos en caché local</div>
+        <div className="text-sm text-[#85858b] font-sans-ui">Modelos en caché local</div>
         <ul className="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm font-sans-ui">
           {Object.entries(sys.cached_models).map(([k, v]) => (
-            <li key={k} className="flex justify-between gap-2 text-slate-300"><span className="truncate">{k}</span><span className="text-amber-300/80">{v} GB</span></li>
+            <li key={k} className="flex justify-between gap-2 text-[#a1a1a6]"><span className="truncate">{k}</span><span className="text-[#ededed] tabular-nums">{v} GB</span></li>
           ))}
         </ul>
       </div>
@@ -60,45 +61,45 @@ function SystemCard({ sys }) {
 function ComparisonCard({ comparison }) {
   const pending = comparison.stories.some((story) => ["queued", "generating"].includes(story.status));
   return (
-    <article data-testid="experiment-comparison" className="parchment paper-grain rounded-2xl p-5 sm:p-6">
+    <article data-testid="experiment-comparison" className="parchment rounded-xl p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h3 className="font-display text-xl text-amber-100">{comparison.idea}</h3>
-          <p className="text-sm text-slate-400 font-sans-ui mt-1">
-            {GENRE_BY_ID[comparison.genre]?.name} · semilla {comparison.seed} · mismo perfil e idea; cambia la estrategia de consistencia.
+          <h3 className="font-sans-ui text-lg font-medium text-[#ededed]">{comparison.idea}</h3>
+          <p className="text-sm text-[#a1a1a6] font-sans-ui mt-1">
+            {GENRE_BY_ID[comparison.genre]?.name} · semilla <span className="tabular-nums">{comparison.seed}</span> · mismo perfil e idea; cambia la estrategia de consistencia.
           </p>
         </div>
-        {pending && <span className="inline-flex items-center gap-2 text-sm text-amber-200 font-sans-ui"><Loader2 className="h-4 w-4 animate-spin" /> Generando en cola</span>}
+        {pending && <span className="inline-flex items-center gap-2 text-sm text-[#a1a1a6] font-sans-ui"><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> Generando en cola</span>}
       </div>
       <div className="mt-5 grid lg:grid-cols-2 gap-4">
         {comparison.stories.map((story) => (
           <section key={story.id} data-testid={`comparison-${story.config.comparison_strategy}`}
-            className="rounded-xl border border-amber-400/15 bg-slate-950/40 p-4">
+            className="rounded-xl border border-[rgba(237,237,237,0.08)] bg-[#232325]/40 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h4 className="font-display text-lg text-amber-100">
-                  Consistencia {story.config.consistency ? "ON" : "OFF"}
+                <h4 className="font-sans-ui text-base font-medium text-[#ededed]">
+                  Consistencia {story.config.consistency ? "activada" : "desactivada"}
                 </h4>
-                <p className="text-xs text-slate-400 font-sans-ui">{story.config.profile} · {story.config.image_model}</p>
+                <p className="text-xs text-[#85858b] font-sans-ui mt-0.5">{story.config.profile} · {story.config.image_model}</p>
               </div>
               {story.status === "done" && (
-                <Link to={`/story/${story.id}`} className="text-sm text-amber-300 hover:text-amber-100">Abrir cuento</Link>
+                <Link to={`/story/${story.id}`} className="text-sm text-[#a1a1a6] hover:text-[#ededed] transition-colors">Abrir cuento</Link>
               )}
             </div>
             {story.status === "error" ? (
-              <p role="alert" className="mt-3 text-sm text-rose-300">{story.error || "La generación falló."}</p>
+              <p role="alert" className="mt-3 text-sm text-[#e5484d]">{story.error || "La generación falló."}</p>
             ) : story.status !== "done" ? (
-              <p className="mt-3 text-sm text-slate-400 font-sans-ui">{story.stage || "En espera"} · {story.progress}/{story.total_steps}</p>
+              <p className="mt-3 text-sm text-[#a1a1a6] font-sans-ui">{story.stage || "En espera"} · <span className="tabular-nums">{story.progress}/{story.total_steps}</span></p>
             ) : (
               <>
                 <div className="mt-3 grid grid-cols-5 gap-1.5">
                   {story.scenes.map((scene) => (
-                    <div key={scene.index} className="aspect-square rounded-md overflow-hidden bg-slate-800">
+                    <div key={scene.index} className="aspect-square rounded-md overflow-hidden bg-[#232325]">
                       {scene.image && <img src={mediaUrl(scene.image)} alt={`Escena ${scene.index}`} className="w-full h-full object-cover" />}
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-xs text-slate-300 font-sans-ui">
+                <p className="mt-3 text-xs text-[#a1a1a6] font-sans-ui tabular-nums">
                   CLIP: {story.metrics?.clip_mean == null ? "no disponible" : story.metrics.clip_mean.toFixed(3)}
                   {" · "}mín.: {story.metrics?.clip_min == null ? "—" : story.metrics.clip_min.toFixed(3)}
                   {" · "}tiempo: {story.metrics?.total_s ?? "—"} s
@@ -160,7 +161,7 @@ export default function Experiments() {
     if (!rows) return [];
     const by = {};
     rows.forEach((r) => {
-      const strat = r.ip_adapter ? "consistencia + IP-Adapter" : r.consistency ? "consistencia ON" : "consistencia OFF";
+      const strat = r.ip_adapter ? "consistencia + IP-Adapter" : r.consistency ? "consistencia activada" : "consistencia desactivada";
       const k = `${r.profile} · ${strat} · ${r.steps} pasos`;
       (by[k] ||= []).push(r);
     });
@@ -176,96 +177,91 @@ export default function Experiments() {
   }, [rows]);
 
   return (
-    <main className="relative max-w-7xl mx-auto px-6 py-10 sm:py-14 space-y-8">
-      <div className="flex items-end justify-between gap-4 flex-wrap animate-fade-up">
+    <main className="max-w-7xl mx-auto px-6 py-10 sm:py-12 space-y-8">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <div className="text-xs uppercase tracking-[0.3em] text-amber-300/80 font-sans-ui flex items-center gap-2"><FlaskConical className="h-3.5 w-3.5" /> Laboratorio</div>
-          <h1 className="font-display text-4xl sm:text-5xl text-amber-100 mt-2">Panel de experimentos</h1>
-          <p className="font-prose text-lg text-slate-300 mt-2 max-w-2xl">Cada cuento registra su configuración, los tiempos de cada módulo y una métrica objetiva de consistencia visual (similitud CLIP entre escenas, de 0 a 1).</p>
+          <h1 className="font-sans-ui text-3xl sm:text-4xl font-medium text-[#ededed]">Experimentos</h1>
+          <p className="font-sans-ui text-base text-[#a1a1a6] mt-2 max-w-2xl">Cada cuento registra su configuración, los tiempos de cada módulo y la similitud CLIP entre escenas (de 0 a 1).</p>
         </div>
-        <Button data-testid="experiments-export-csv" disabled={!rows?.length} onClick={() => exportCsv(rows)} className="bg-amber-400 hover:bg-amber-300 text-slate-950">
-          <Download className="h-4 w-4 mr-2" /> Exportar CSV
+        <Button data-testid="experiments-export-csv" disabled={!rows?.length} onClick={() => exportCsv(rows)} variant="outline" className="border-[rgba(237,237,237,0.16)] text-[#ededed] bg-transparent hover:bg-[#232325]">
+          <Download className="h-4 w-4 mr-2" strokeWidth={1.5} /> Exportar CSV
         </Button>
       </div>
 
       <SystemCard sys={sys} />
 
-      <section data-testid="experiment-comparison-panel" className="parchment paper-grain rounded-2xl p-6 sm:p-8 space-y-5">
+      <section data-testid="experiment-comparison-panel" className="parchment rounded-xl p-6 sm:p-8 space-y-5">
         <div>
-          <div className="text-xs uppercase tracking-[0.25em] text-amber-300/70 font-sans-ui flex items-center gap-2">
-            <GitCompareArrows className="h-3.5 w-3.5" /> Prueba controlada
-          </div>
-          <h2 className="font-display text-2xl text-amber-100 mt-2">¿La consistencia ayuda a mantener al personaje?</h2>
-          <p className="font-prose text-slate-300 mt-1 max-w-3xl">
-            Genera dos cuentos con la misma idea, género, perfil y semilla. Compara OFF (sin la estrategia de consistencia)
-            con ON, usando las cinco imágenes, la similitud CLIP y los tiempos medidos. Los modelos locales pueden tardar varios minutos.
+          <h2 className="font-sans-ui text-xl font-medium text-[#ededed]">Comparación de consistencia</h2>
+          <p className="font-sans-ui text-sm text-[#a1a1a6] mt-2 max-w-3xl">
+            Genera dos cuentos con la misma idea, género, perfil y semilla. Compara la estrategia de consistencia desactivada y activada usando las imágenes, la similitud CLIP y los tiempos medidos.
           </p>
         </div>
         <form onSubmit={startComparison} className="grid md:grid-cols-2 xl:grid-cols-4 gap-3 items-end">
-          <label className="xl:col-span-2 text-sm text-amber-200 font-sans-ui">
+          <label className="xl:col-span-2 text-sm text-[#a1a1a6] font-sans-ui">
             Idea
             <input data-testid="compare-idea-input" required minLength={3} maxLength={500}
               value={compareForm.idea} onChange={(e) => setCompareForm((f) => ({ ...f, idea: e.target.value }))}
-              className="mt-1 w-full rounded-md bg-slate-950/60 border border-amber-500/20 px-3 py-2 text-amber-50"
+              className="mt-1 w-full rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)] px-3 py-2 text-[#ededed] placeholder:text-[#85858b]"
               placeholder="Un zorro que busca la luna" />
           </label>
-          <label className="text-sm text-amber-200 font-sans-ui">
+          <label className="text-sm text-[#a1a1a6] font-sans-ui">
             Género
             <select value={compareForm.genre} onChange={(e) => setCompareForm((f) => ({ ...f, genre: e.target.value }))}
-              className="mt-1 w-full rounded-md bg-slate-950/60 border border-amber-500/20 px-3 py-2 text-amber-50">
+              className="mt-1 w-full rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)] px-3 py-2 text-[#ededed]">
               {GENRE_LIST.map((genre) => <option key={genre.id} value={genre.id}>{genre.name}</option>)}
             </select>
           </label>
-          <label className="text-sm text-amber-200 font-sans-ui">
+          <label className="text-sm text-[#a1a1a6] font-sans-ui">
             Perfil
             <select value={compareForm.profile} onChange={(e) => setCompareForm((f) => ({ ...f, profile: e.target.value }))}
-              className="mt-1 w-full rounded-md bg-slate-950/60 border border-amber-500/20 px-3 py-2 text-amber-50">
+              className="mt-1 w-full rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)] px-3 py-2 text-[#ededed]">
               <option value="ligero">Ligero (CPU)</option>
               <option value="equilibrado">Equilibrado (GPU 8 GB+)</option>
               <option value="calidad">Calidad (GPU 12 GB+)</option>
             </select>
           </label>
-          <label className="text-sm text-amber-200 font-sans-ui">
+          <label className="text-sm text-[#a1a1a6] font-sans-ui">
             Semilla (opcional)
             <input type="number" min="0" max="2147483647" value={compareForm.seed}
               onChange={(e) => setCompareForm((f) => ({ ...f, seed: e.target.value }))}
-              className="mt-1 w-full rounded-md bg-slate-950/60 border border-amber-500/20 px-3 py-2 text-amber-50"
+              className="mt-1 w-full rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)] px-3 py-2 text-[#ededed] placeholder:text-[#85858b]"
               placeholder="Aleatoria" />
           </label>
           <div className="md:col-span-2 xl:col-span-3">
             <Button data-testid="compare-start-button" type="submit" disabled={compareLoading || compareForm.idea.trim().length < 3}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 disabled:opacity-50">
-              {compareLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Play className="h-4 w-4 mr-2" />}
-              Ejecutar comparación ON/OFF
+              className="bg-[#ededed] hover:bg-[#d4d4d4] text-[#141415] disabled:opacity-50">
+              {compareLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" strokeWidth={1.5} /> : null}
+              Ejecutar comparación
             </Button>
           </div>
         </form>
-        {compareError && <p role="alert" className="text-sm text-rose-300">{compareError}</p>}
+        {compareError && <p role="alert" className="text-sm text-[#e5484d]">{compareError}</p>}
         {comparisons?.length > 0 && (
           <div className="space-y-4 pt-2">
-            <h3 className="font-display text-xl text-amber-100">Comparaciones realizadas</h3>
+            <h3 className="font-sans-ui text-lg font-medium text-[#ededed]">Comparaciones realizadas</h3>
             {comparisons.map((comparison) => <ComparisonCard key={comparison.id} comparison={comparison} />)}
           </div>
         )}
       </section>
 
-      {rows === null && <div className="flex items-center gap-2 text-amber-200/80"><Loader2 className="h-4 w-4 animate-spin" /> Cargando mediciones…</div>}
+      {rows === null && <div className="flex items-center gap-2 text-[#a1a1a6] text-sm font-sans-ui"><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> Cargando mediciones</div>}
       {rows?.length === 0 && (
-        <div data-testid="experiments-empty" className="parchment rounded-2xl p-8 text-center font-prose text-lg text-slate-300">
-          Todavía no hay cuentos terminados. <Link to="/create" className="text-amber-300">Crea uno</Link> para empezar a medir.
+        <div data-testid="experiments-empty" className="parchment rounded-xl p-8 text-center font-sans-ui text-base text-[#a1a1a6]">
+          Todavía no hay cuentos terminados. <Link to="/create" className="text-[#ededed] hover:underline">Crea uno</Link> para empezar a medir.
         </div>
       )}
 
       {groups.length > 0 && (
-        <div className="parchment paper-grain rounded-2xl p-6">
-          <h2 className="font-display text-2xl text-amber-100">Tiempo medio por módulo (segundos)</h2>
+        <div className="parchment rounded-xl p-6">
+          <h2 className="font-sans-ui text-xl font-medium text-[#ededed]">Tiempo medio por módulo (segundos)</h2>
           <div className="h-72 mt-4" data-testid="experiments-chart">
             <ResponsiveContainer>
               <BarChart data={groups}>
-                <CartesianGrid stroke="#ffffff10" />
-                <XAxis dataKey="name" tick={{ fill: "#cbd5e1", fontSize: 11 }} />
-                <YAxis tick={{ fill: "#cbd5e1", fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: "#131a2b", border: "1px solid rgba(234,179,8,.3)", color: "#fef3c7" }} />
+                <CartesianGrid stroke="rgba(237,237,237,0.08)" />
+                <XAxis dataKey="name" tick={{ fill: "#a1a1a6", fontSize: 11 }} />
+                <YAxis tick={{ fill: "#a1a1a6", fontSize: 11 }} />
+                <Tooltip contentStyle={{ background: "#19191b", border: "1px solid rgba(237,237,237,0.08)", color: "#ededed" }} />
                 <Legend />
                 <Bar dataKey="texto" stackId="a" fill="#eab308" />
                 <Bar dataKey="imagen" stackId="a" fill="#a855f7" />
@@ -276,26 +272,26 @@ export default function Experiments() {
           </div>
           <div className="overflow-x-auto mt-6">
             <table className="w-full text-sm font-sans-ui" data-testid="experiments-groups-table">
-              <thead className="text-amber-300/80 text-left"><tr>{["Configuración", "n", "Total s", "Tokens/s", "Menciones protagonista (de 5)", "Similitud CLIP"].map((h) => <th key={h} className="py-2 pr-4 font-medium">{h}</th>)}</tr></thead>
-              <tbody className="text-slate-300">{groups.map((g) => <tr key={g.name} className="border-t border-white/5"><td className="py-2 pr-4">{g.name}</td><td>{g.n}</td><td>{g.total}</td><td>{g.tok_s}</td><td>{g.mentions}</td><td data-testid="experiments-clip-cell">{g.clip}</td></tr>)}</tbody>
+              <thead className="text-[#85858b] text-left"><tr>{["Configuración", "n", "Total s", "Tokens/s", "Menciones protagonista (de 5)", "Similitud CLIP"].map((h) => <th key={h} className="py-2 pr-4 font-medium">{h}</th>)}</tr></thead>
+              <tbody className="text-[#a1a1a6]">{groups.map((g) => <tr key={g.name} className="border-t border-[rgba(237,237,237,0.08)]"><td className="py-2 pr-4 text-[#ededed]">{g.name}</td><td className="tabular-nums">{g.n}</td><td className="tabular-nums">{g.total}</td><td className="tabular-nums">{g.tok_s}</td><td className="tabular-nums">{g.mentions}</td><td data-testid="experiments-clip-cell" className="tabular-nums">{g.clip}</td></tr>)}</tbody>
             </table>
           </div>
         </div>
       )}
 
       {rows?.length > 0 && (
-        <div className="parchment rounded-2xl p-6 overflow-x-auto">
-          <h2 className="font-display text-2xl text-amber-100 mb-4">Ejecuciones</h2>
+        <div className="parchment rounded-xl p-6 overflow-x-auto">
+          <h2 className="font-sans-ui text-xl font-medium text-[#ededed] mb-4">Ejecuciones</h2>
           <table className="w-full text-sm font-sans-ui" data-testid="experiments-runs-table">
-            <thead className="text-amber-300/80 text-left"><tr>{["Cuento", "Género", "Perfil", "Disp.", "Semilla", "Pasos", "Temp.", "Consist.", "Texto", "Imagen", "Voz", "CLIP", "Total"].map((h) => <th key={h} className="py-2 pr-3 font-medium whitespace-nowrap">{h}</th>)}</tr></thead>
-            <tbody className="text-slate-300">
+            <thead className="text-[#85858b] text-left"><tr>{["Cuento", "Género", "Perfil", "Disp.", "Semilla", "Pasos", "Temp.", "Consist.", "Texto", "Imagen", "Voz", "CLIP", "Total"].map((h) => <th key={h} className="py-2 pr-3 font-medium whitespace-nowrap">{h}</th>)}</tr></thead>
+            <tbody className="text-[#a1a1a6]">
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-white/5">
-                  <td className="py-2 pr-3 max-w-[220px] truncate"><Link to={`/story/${r.id}`} className="hover:text-amber-200">{r.title}</Link></td>
+                <tr key={r.id} className="border-t border-[rgba(237,237,237,0.08)]">
+                  <td className="py-2 pr-3 max-w-[220px] truncate"><Link to={`/story/${r.id}`} className="text-[#ededed] hover:underline">{r.title}</Link></td>
                   <td className="pr-3">{GENRE_BY_ID[r.genre]?.name}</td><td className="pr-3">{r.profile}</td><td className="pr-3">{r.device}</td>
-                  <td className="pr-3">{r.seed}</td><td className="pr-3">{r.steps}</td><td className="pr-3">{r.temperature}</td>
-                  <td className="pr-3">{r.ip_adapter ? "Sí + IP" : r.consistency ? "Sí" : "No"}</td><td className="pr-3">{r.text_s}s</td><td className="pr-3">{r.image_s}s</td>
-                  <td className="pr-3">{r.tts_s}s</td><td className="pr-3">{r.clip_mean ?? "—"}</td><td className="pr-3 text-amber-200">{r.total_s}s</td>
+                  <td className="pr-3 tabular-nums">{r.seed}</td><td className="pr-3 tabular-nums">{r.steps}</td><td className="pr-3 tabular-nums">{r.temperature}</td>
+                  <td className="pr-3">{r.ip_adapter ? "Sí + IP" : r.consistency ? "Sí" : "No"}</td><td className="pr-3 tabular-nums">{r.text_s}s</td><td className="pr-3 tabular-nums">{r.image_s}s</td>
+                  <td className="pr-3 tabular-nums">{r.tts_s}s</td><td className="pr-3 tabular-nums">{r.clip_mean ?? "—"}</td><td className="pr-3 tabular-nums text-[#ededed]">{r.total_s}s</td>
                 </tr>
               ))}
             </tbody>

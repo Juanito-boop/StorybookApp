@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Library as LibraryIcon, Loader2, Feather, BookOpen, Search, Heart } from "lucide-react";
+import { Loader2, Search, Heart } from "lucide-react";
 import { api, formatApiError } from "@/lib/api";
 import { GENRE_LIST } from "@/lib/genres";
 import { Button } from "@/components/ui/button";
@@ -55,41 +55,38 @@ export default function Library() {
   };
 
   return (
-    <main className="relative max-w-7xl mx-auto px-6 py-10 sm:py-14">
-      <div className="flex items-center justify-between flex-wrap gap-4 animate-fade-up">
+    <main className="max-w-7xl mx-auto px-6 py-10 sm:py-12">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <div className="text-xs uppercase tracking-[0.3em] text-amber-300/80 font-sans-ui flex items-center gap-2">
-            <LibraryIcon className="h-3.5 w-3.5" /> Tu colección
-          </div>
-          <h1 className="font-display text-4xl sm:text-5xl text-amber-100 mt-2">Mi biblioteca</h1>
-          <p className="font-prose text-slate-300 text-lg mt-2">Todos los cuentos encuadernados a tu nombre.</p>
+          <h1 className="font-sans-ui text-3xl sm:text-4xl font-medium text-[#ededed]">Biblioteca</h1>
+          <p className="font-sans-ui text-base text-[#a1a1a6] mt-2">Tus cuentos guardados en este equipo.</p>
         </div>
         <Link to="/create">
-          <Button data-testid="library-new-story-button" className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-medium">
-            <Feather className="h-4 w-4 mr-2" /> Nuevo cuento
+          <Button data-testid="library-new-story-button" className="bg-[#ededed] hover:bg-[#d4d4d4] text-[#141415] font-medium h-10 px-4 rounded-lg">
+            Nuevo cuento
           </Button>
         </Link>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-8">
         {error && (
-          <div data-testid="library-error" className="parchment rounded-2xl p-8 text-center">
-            <p className="font-prose text-lg text-red-200">No pudimos abrir tu biblioteca. Comprueba que el servidor esté encendido.</p>
-            <Button data-testid="library-retry-button" onClick={() => load()} className="mt-4 bg-amber-400 hover:bg-amber-300 text-slate-950">Reintentar</Button>
+          <div data-testid="library-error" className="parchment rounded-xl p-8 text-center">
+            <p className="font-sans-ui text-base text-[#ededed]">No se pudo abrir la biblioteca.</p>
+            <p className="font-sans-ui text-sm text-[#a1a1a6] mt-2">Comprueba que el servidor esté encendido e inténtalo de nuevo.</p>
+            <Button data-testid="library-retry-button" onClick={() => load()} variant="outline" className="mt-4 border-[rgba(237,237,237,0.16)] text-[#ededed] bg-transparent hover:bg-[#232325]">Reintentar</Button>
           </div>
         )}
 
         {!error && stories === null && (
-          <div className="flex items-center gap-2 text-amber-200/80 font-prose"><Loader2 className="h-4 w-4 animate-spin" /> Abriendo los estantes…</div>
+          <div className="flex items-center gap-2 text-[#a1a1a6] font-sans-ui text-sm"><Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> Cargando biblioteca</div>
         )}
 
         {stories && stories.length === 0 && (
-          <div className="parchment paper-grain rounded-2xl p-10 text-center animate-fade-up">
-            <BookOpen className="h-10 w-10 text-amber-300 mx-auto mb-4" />
-            <h2 className="font-display text-2xl text-amber-100">Tu biblioteca aún está en blanco</h2>
-            <p className="font-prose text-slate-300 mt-2">Crea tu primer cuento y aparecerá aquí, listo para releer.</p>
+          <div className="parchment rounded-xl p-10 text-center">
+            <h2 className="font-sans-ui text-xl font-medium text-[#ededed]">Aún no tienes cuentos guardados</h2>
+            <p className="font-sans-ui text-sm text-[#a1a1a6] mt-2">Cuando crees un cuento, aparecerá aquí para que puedas leerlo y editarlo.</p>
             <Link to="/create" className="inline-block mt-6">
-              <Button data-testid="library-empty-cta" className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-medium">Crear mi primer cuento</Button>
+              <Button data-testid="library-empty-cta" className="bg-[#ededed] hover:bg-[#d4d4d4] text-[#141415] font-medium">Crear un cuento</Button>
             </Link>
           </div>
         )}
@@ -98,23 +95,23 @@ export default function Library() {
           <>
             <div className="mb-6 flex flex-wrap items-center gap-3">
               <div className="relative">
-                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-amber-300/60" />
-                <Input data-testid="library-search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título o idea…"
-                  className="pl-9 w-64 bg-slate-900/70 border-amber-500/20 text-amber-50" />
+                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#85858b]" strokeWidth={1.5} />
+                <Input data-testid="library-search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por título o idea"
+                  className="pl-9 w-64 bg-[#232325] border-[rgba(237,237,237,0.08)] text-[#ededed] placeholder:text-[#85858b]" />
               </div>
               <button data-testid="library-filter-favorites" onClick={() => setFavOnly((v) => !v)}
-                className={`rounded-full border px-3 py-1.5 text-sm font-sans-ui inline-flex items-center gap-1.5 transition-colors ${favOnly ? "border-rose-400/60 bg-rose-400/10 text-rose-200" : "border-white/10 text-slate-300 hover:border-amber-400/40"}`}>
-                <Heart className={`h-3.5 w-3.5 ${favOnly ? "fill-rose-400 text-rose-400" : ""}`} /> Favoritos
+                className={`rounded-lg border px-3 py-1.5 text-sm font-sans-ui inline-flex items-center gap-2 transition-colors ${favOnly ? "border-[rgba(237,237,237,0.24)] bg-[#232325] text-[#ededed]" : "border-[rgba(237,237,237,0.08)] text-[#a1a1a6] hover:bg-[#232325] hover:text-[#ededed]"}`}>
+                <Heart className={`h-4 w-4 ${favOnly ? "fill-[#ededed] text-[#ededed]" : ""}`} strokeWidth={1.5} /> Favoritos
               </button>
               {[{ id: "", name: "Todos" }, ...GENRE_LIST].map((g) => (
                 <button key={g.id || "all"} data-testid={`library-filter-genre-${g.id || "all"}`} onClick={() => setGenre(g.id)}
-                  className={`rounded-full border px-3 py-1.5 text-sm font-sans-ui transition-colors ${genre === g.id ? "border-amber-400/70 bg-amber-400/10 text-amber-100" : "border-white/10 text-slate-300 hover:border-amber-400/40"}`}>
+                  className={`rounded-lg border px-3 py-1.5 text-sm font-sans-ui transition-colors ${genre === g.id ? "border-[rgba(237,237,237,0.24)] bg-[#232325] text-[#ededed]" : "border-[rgba(237,237,237,0.08)] text-[#a1a1a6] hover:bg-[#232325] hover:text-[#ededed]"}`}>
                   {g.name}
                 </button>
               ))}
             </div>
-            {visible.length === 0 && <p data-testid="library-no-results" className="font-prose italic text-slate-400 text-lg">Ningún cuento coincide con esos filtros.</p>}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {visible.length === 0 && <p data-testid="library-no-results" className="font-sans-ui text-sm text-[#a1a1a6]">Ningún cuento coincide con esos filtros.</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {visible.map((s, i) => (
                 <LibraryCard key={s.id} s={s} i={i} onFavorite={() => toggleFav(s)} onDelete={() => setToDelete(s)} />
               ))}
@@ -124,14 +121,14 @@ export default function Library() {
       </div>
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
-        <AlertDialogContent className="parchment border-amber-400/30">
+        <AlertDialogContent className="parchment border-[rgba(237,237,237,0.08)]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-display text-amber-100">¿Borrar «{toDelete?.title}»?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">Se eliminarán sus ilustraciones y audios. No se puede deshacer.</AlertDialogDescription>
+            <AlertDialogTitle className="font-sans-ui text-[#ededed]">¿Borrar «{toDelete?.title}»?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#a1a1a6]">Se eliminarán sus ilustraciones y audios. No se puede deshacer.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="library-delete-cancel" className="bg-transparent border-amber-400/30 text-amber-100">Cancelar</AlertDialogCancel>
-            <AlertDialogAction data-testid="library-delete-confirm" onClick={remove} className="bg-rose-500 hover:bg-rose-400 text-white">Borrar</AlertDialogAction>
+            <AlertDialogCancel data-testid="library-delete-cancel" className="bg-transparent border-[rgba(237,237,237,0.16)] text-[#ededed] hover:bg-[#232325]">Cancelar</AlertDialogCancel>
+            <AlertDialogAction data-testid="library-delete-confirm" onClick={remove} className="bg-[#e5484d] hover:bg-[#d63d42] text-white">Borrar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -35,9 +35,9 @@ root.render(
         theme="dark"
         toastOptions={{
           style: {
-            background: "rgba(19, 26, 43, 0.95)",
-            color: "#FEF3C7",
-            border: "1px solid rgba(234, 179, 8, 0.4)",
+            background: "#19191b",
+            color: "#ededed",
+            border: "1px solid rgba(237, 237, 237, 0.08)",
             fontFamily: "'Outfit', system-ui, sans-serif",
           },
         }}

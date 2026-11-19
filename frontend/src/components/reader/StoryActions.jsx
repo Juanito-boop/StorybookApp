@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { api, formatApiError, downloadPdf } from "@/lib/api";
 
-const ghost = "border-amber-400/30 text-amber-100 bg-transparent hover:bg-amber-400/10";
+const ghost = "border-[rgba(237,237,237,0.16)] text-[#ededed] bg-transparent hover:bg-[#232325]";
 
 export function StoryActions({ story, onChange }) {
   const navigate = useNavigate();
@@ -59,45 +59,45 @@ export function StoryActions({ story, onChange }) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <Button data-testid="story-favorite-button" size="sm" variant="outline" onClick={toggleFav} className={ghost}>
-        <Heart className={`h-4 w-4 mr-1 ${story.favorite ? "fill-rose-400 text-rose-400" : ""}`} /> Favorito
+        <Heart className={`h-4 w-4 mr-1 ${story.favorite ? "fill-[#ededed] text-[#ededed]" : ""}`} strokeWidth={1.5} /> Favorito
       </Button>
       <Button data-testid="story-share-button" size="sm" variant="outline" onClick={share} disabled={!done} className={ghost}>
-        <Share2 className="h-4 w-4 mr-1" /> Compartir
+        <Share2 className="h-4 w-4 mr-1" strokeWidth={1.5} /> Compartir
       </Button>
       <Button data-testid="story-pdf-button" size="sm" variant="outline" onClick={pdf} disabled={!done || pdfLoading} className={ghost}>
-        {pdfLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />} PDF
+        {pdfLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" strokeWidth={1.5} /> : <FileDown className="h-4 w-4 mr-1" strokeWidth={1.5} />} PDF
       </Button>
-      <Button data-testid="story-delete-button" size="sm" variant="ghost" onClick={() => setConfirmDelete(true)} disabled={story.status === "generating"} className="text-rose-300 hover:bg-rose-500/10">
-        <Trash2 className="h-4 w-4" />
+      <Button data-testid="story-delete-button" size="sm" variant="ghost" onClick={() => setConfirmDelete(true)} disabled={story.status === "generating"} className="text-[#a1a1a6] hover:text-[#e5484d] hover:bg-[#232325]">
+        <Trash2 className="h-4 w-4" strokeWidth={1.5} />
       </Button>
 
       <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-        <DialogContent className="parchment border-amber-400/30 text-amber-50">
+        <DialogContent className="parchment border-[rgba(237,237,237,0.08)] text-[#ededed]">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-amber-100">Compartir cuento</DialogTitle>
-            <DialogDescription className="text-slate-400">Cualquier persona con este enlace podrá leer y escuchar el cuento, sin cuenta. Solo funciona mientras tu servidor esté encendido y accesible en la red.</DialogDescription>
+            <DialogTitle className="font-sans-ui text-xl font-medium text-[#ededed]">Compartir cuento</DialogTitle>
+            <DialogDescription className="text-[#a1a1a6]">Cualquier persona con este enlace podrá leer y escuchar el cuento, sin cuenta. Solo funciona mientras tu servidor esté encendido y accesible en la red.</DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-2">
-            <input data-testid="share-link-input" readOnly value={link} className="flex-1 rounded-md bg-slate-950/70 border border-amber-500/20 px-3 py-2 text-sm text-amber-50" />
-            <Button data-testid="share-copy-button" onClick={() => { navigator.clipboard?.writeText(link); toast.success("Enlace copiado"); }} className="bg-amber-400 hover:bg-amber-300 text-slate-950">
-              <Copy className="h-4 w-4" />
+            <input data-testid="share-link-input" readOnly value={link} className="flex-1 rounded-lg bg-[#232325] border border-[rgba(237,237,237,0.08)] px-3 py-2 text-sm text-[#ededed]" />
+            <Button data-testid="share-copy-button" onClick={() => { navigator.clipboard?.writeText(link); toast.success("Enlace copiado"); }} className="bg-[#ededed] hover:bg-[#d4d4d4] text-[#141415]">
+              <Copy className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </div>
-          <Button data-testid="share-disable-button" variant="ghost" onClick={unshare} className="text-rose-300 hover:bg-rose-500/10 justify-start">
-            <Link2Off className="h-4 w-4 mr-2" /> Desactivar enlace
+          <Button data-testid="share-disable-button" variant="ghost" onClick={unshare} className="text-[#a1a1a6] hover:text-[#e5484d] hover:bg-[#232325] justify-start">
+            <Link2Off className="h-4 w-4 mr-2" strokeWidth={1.5} /> Desactivar enlace
           </Button>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent className="parchment border-amber-400/30">
+        <AlertDialogContent className="parchment border-[rgba(237,237,237,0.08)]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-display text-amber-100">¿Borrar este cuento?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">Se eliminarán sus ilustraciones y audios. No se puede deshacer.</AlertDialogDescription>
+            <AlertDialogTitle className="font-sans-ui text-[#ededed]">¿Borrar este cuento?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#a1a1a6]">Se eliminarán sus ilustraciones y audios. No se puede deshacer.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="delete-cancel-button" className="bg-transparent border-amber-400/30 text-amber-100">Cancelar</AlertDialogCancel>
-            <AlertDialogAction data-testid="delete-confirm-button" onClick={remove} className="bg-rose-500 hover:bg-rose-400 text-white">Borrar</AlertDialogAction>
+            <AlertDialogCancel data-testid="delete-cancel-button" className="bg-transparent border-[rgba(237,237,237,0.16)] text-[#ededed] hover:bg-[#232325]">Cancelar</AlertDialogCancel>
+            <AlertDialogAction data-testid="delete-confirm-button" onClick={remove} className="bg-[#e5484d] hover:bg-[#d63d42] text-white">Borrar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
