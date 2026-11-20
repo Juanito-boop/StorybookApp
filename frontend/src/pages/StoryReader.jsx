@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, ArrowLeft, Loader2, Repeat, AlertTriangle, RefreshCw, FileDown, Cpu, Save, Volume2, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft, Loader2, AlertTriangle, RefreshCw, FileDown, Cpu, Save, Volume2, RotateCcw, Pencil, X } from "lucide-react";
 import { api, mediaUrl, formatApiError, downloadPdf } from "@/lib/api";
 import { GENRE_BY_ID } from "@/lib/genres";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { AudioPanel } from "@/components/reader/AudioPanel";
 import { GenerationProgress } from "@/components/reader/GenerationProgress";
 import { StoryActions } from "@/components/reader/StoryActions";
@@ -32,7 +33,7 @@ function SceneImage({ scene, total }) {
   );
 }
 
-function SceneEditor({ storyId, scene, onStoryChange, refresh }) {
+function SceneEditor({ storyId, scene, onStoryChange, refresh, onDirtyChange, onSaved, textareaRef }) {
   const [draft, setDraft] = useState(scene.text);
   const [saving, setSaving] = useState(false);
   const [narrating, setNarrating] = useState(false);
@@ -40,6 +41,8 @@ function SceneEditor({ storyId, scene, onStoryChange, refresh }) {
   const busy = scene.regenerating || scene.audio_regenerating;
 
   useEffect(() => setDraft(scene.text), [scene.index, scene.text]);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
+  useEffect(() => { textareaRef?.current?.focus(); }, [textareaRef]);
 
   const saveText = async () => {
     setSaving(true);
@@ -47,6 +50,7 @@ function SceneEditor({ storyId, scene, onStoryChange, refresh }) {
       const { data } = await api.patch(`/stories/${storyId}/scenes/${scene.index}`, { text: draft });
       onStoryChange(data);
       toast.success("Cambios guardados; la versión anterior quedó en el historial.");
+      onSaved?.();
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
     } finally {
@@ -74,6 +78,7 @@ function SceneEditor({ storyId, scene, onStoryChange, refresh }) {
       </label>
       <Textarea
         id={`scene-text-${scene.index}`}
+        ref={textareaRef}
         data-testid="scene-edit-input"
         value={draft}
         maxLength={2000}
@@ -124,6 +129,13 @@ export default function StoryReader({ publicToken }) {
   const [story, setStory] = useState(null);
   const [sceneIdx, setSceneIdx] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorDirty, setEditorDirty] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(null);
+  const editButtonRef = useRef(null);
+  const editorTextareaRef = useRef(null);
+  const discardFocusRef = useRef(false);
+  const confirmedDiscardRef = useRef(false);
   const owner = !publicToken;
   const endpoint = owner ? `/stories/${id}` : `/public/stories/${publicToken}`;
 
@@ -151,8 +163,51 @@ export default function StoryReader({ publicToken }) {
   const scene = story?.scenes[sceneIdx];
   const genre = useMemo(() => GENRE_BY_ID[story?.genre] || GENRE_BY_ID.fantasia, [story?.genre]);
 
-  const goNext = useCallback(() => setSceneIdx((i) => Math.min(available - 1, i + 1)), [available]);
-  const goPrev = useCallback(() => setSceneIdx((i) => Math.max(0, i - 1)), []);
+  // Un único mecanismo de confirmación protege el botón Editar, los dots, Anterior/Siguiente
+  // y el avance automático por narración cuando hay cambios sin guardar.
+  const applySceneChange = useCallback((target) => {
+    setSceneIdx((i) => (typeof target === "function" ? target(i) : target));
+    setEditorOpen(false);
+    setEditorDirty(false);
+  }, []);
+
+  const requestSceneChange = useCallback((target) => {
+    if (editorOpen && editorDirty) {
+      confirmedDiscardRef.current = false;
+      discardFocusRef.current = false;
+      setConfirmDiscard({ action: () => applySceneChange(target) });
+    } else {
+      applySceneChange(target);
+    }
+  }, [editorOpen, editorDirty, applySceneChange]);
+
+  const goNext = useCallback(() => requestSceneChange((i) => Math.min(available - 1, i + 1)), [requestSceneChange, available]);
+  const goPrev = useCallback(() => requestSceneChange((i) => Math.max(0, i - 1)), [requestSceneChange]);
+
+  const closeEditor = useCallback(() => {
+    setEditorOpen(false);
+    setEditorDirty(false);
+    editButtonRef.current?.focus();
+  }, []);
+
+  const toggleEditor = () => {
+    if (!editorOpen) { setEditorOpen(true); return; }
+    if (editorDirty) {
+      confirmedDiscardRef.current = false;
+      discardFocusRef.current = true;
+      setConfirmDiscard({ action: closeEditor });
+    } else {
+      closeEditor();
+    }
+  };
+
+  const confirmDiscardChanges = () => {
+    const action = confirmDiscard?.action;
+    confirmedDiscardRef.current = discardFocusRef.current;
+    discardFocusRef.current = false;
+    setConfirmDiscard(null);
+    action?.();
+  };
 
   const onVoiceEnded = useCallback(() => {
     if (!autoplay) return;
@@ -242,33 +297,67 @@ export default function StoryReader({ publicToken }) {
       )}
 
       {scene ? (
-        <div key={sceneIdx} className="mt-8 grid lg:grid-cols-[1fr_1fr] gap-8 items-start">
-          <div>
-            <SceneImage scene={scene} total={total} />
-            {owner && story.status === "done" && (
-              <Button data-testid="scene-regenerate-button" size="sm" variant="ghost" onClick={regen} disabled={scene.regenerating} className="mt-3 text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#232325]">
-                {scene.regenerating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" strokeWidth={1.5} /> : <RefreshCw className="h-4 w-4 mr-1" strokeWidth={1.5} />} Reilustrar esta escena
-              </Button>
-            )}
-          </div>
-          <div className="parchment rounded-xl p-6 sm:p-8 flex flex-col gap-6">
+        <>
+          <div className="mt-8"><AudioPanel audio={audio} scene={scene} /></div>
+          <div key={sceneIdx} className="mt-6 grid lg:grid-cols-[1fr_1fr] gap-8 items-start">
             <div>
-              <div className="text-xs text-[#85858b] font-sans-ui tabular-nums">Escena {scene.index} de {total}</div>
-              <p data-testid="reader-scene-text" className="mt-3 font-prose text-xl sm:text-2xl text-[#ededed] leading-relaxed">{scene.text}</p>
+              <SceneImage scene={scene} total={total} />
+              {owner && story.status === "done" && (
+                <Button data-testid="scene-regenerate-button" size="sm" variant="ghost" onClick={regen} disabled={scene.regenerating} className="mt-3 text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#232325]">
+                  {scene.regenerating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" strokeWidth={1.5} /> : <RefreshCw className="h-4 w-4 mr-1" strokeWidth={1.5} />} Reilustrar esta escena
+                </Button>
+              )}
             </div>
-            {owner && story.status === "done" && (
-              <SceneEditor storyId={story.id} scene={scene} onStoryChange={setStory} refresh={load} />
-            )}
-            <AudioPanel audio={audio} scene={scene} />
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(237,237,237,0.08)] bg-[#232325]/40 px-4 py-3">
-              <div className="min-w-0">
-                <div className="text-sm font-sans-ui text-[#ededed]">Reproducción automática</div>
-                <div className="text-xs font-sans-ui text-[#85858b]">Narra y pasa a la siguiente escena</div>
+            <div className="parchment rounded-xl p-6 sm:p-8 flex flex-col gap-6">
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-xs text-[#85858b] font-sans-ui tabular-nums">Escena {scene.index} de {total}</div>
+                {owner && story.status === "done" && (
+                  <div className="flex items-center justify-end gap-2 flex-wrap">
+                    {scene.audio_stale && !editorOpen && (
+                      <span data-testid="scene-stale-badge" className="rounded-md border border-[rgba(237,237,237,0.08)] bg-[#232325] px-2 py-1 text-[11px] font-sans-ui text-[#a1a1a6]">
+                        Narración desactualizada
+                      </span>
+                    )}
+                    <Button
+                      ref={editButtonRef}
+                      data-testid="scene-edit-toggle"
+                      size="sm"
+                      variant="ghost"
+                      onClick={toggleEditor}
+                      aria-expanded={editorOpen}
+                      aria-controls="scene-workshop-panel"
+                      className="h-10 px-2 text-[#a1a1a6] hover:text-[#ededed] hover:bg-[#232325] sm:h-8"
+                    >
+                      {editorOpen ? <X className="h-4 w-4 mr-1" strokeWidth={1.5} /> : <Pencil className="h-4 w-4 mr-1" strokeWidth={1.5} />}
+                      {editorOpen ? "Cancelar" : "Editar"}
+                    </Button>
+                  </div>
+                )}
               </div>
-              <Switch data-testid="autoplay-switch" checked={autoplay} disabled={story.status !== "done"} onCheckedChange={(v) => { setAutoplay(v); if (v) audio.play(); else audio.stopAll(); }} />
+              <p data-testid="reader-scene-text" className="font-prose text-xl sm:text-2xl text-[#ededed] leading-relaxed">{scene.text}</p>
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(237,237,237,0.08)] bg-[#232325]/40 px-4 py-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-sans-ui text-[#ededed]">Reproducción automática</div>
+                  <div className="text-xs font-sans-ui text-[#85858b]">Narra y pasa a la siguiente escena</div>
+                </div>
+                <Switch data-testid="autoplay-switch" checked={autoplay} disabled={story.status !== "done"} onCheckedChange={(v) => { setAutoplay(v); if (v) audio.play(); else audio.stopAll(); }} />
+              </div>
+              <div id="scene-workshop-panel" className={editorOpen ? undefined : "hidden"}>
+                {owner && story.status === "done" && editorOpen && (
+                  <SceneEditor
+                    storyId={story.id}
+                    scene={scene}
+                    onStoryChange={setStory}
+                    refresh={load}
+                    onDirtyChange={setEditorDirty}
+                    onSaved={closeEditor}
+                    textareaRef={editorTextareaRef}
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </>
       ) : !busy ? null : (
         <div className="mt-8 font-sans-ui text-sm text-[#a1a1a6]">La primera escena aparecerá aquí cuando el modelo termine de escribirla.</div>
       )}
@@ -283,7 +372,7 @@ export default function StoryReader({ publicToken }) {
               const sc = story.scenes[i];
               const active = i === sceneIdx;
               return (
-                <button key={i} disabled={!sc} onClick={() => setSceneIdx(i)} data-testid={`scene-dot-${i + 1}`} aria-label={`Ir a escena ${i + 1}`}
+                <button key={i} disabled={!sc} onClick={() => { if (i !== sceneIdx) requestSceneChange(i); }} data-testid={`scene-dot-${i + 1}`} aria-label={`Ir a escena ${i + 1}`}
                   className={`relative h-12 w-12 rounded-lg overflow-hidden border transition-colors ${active ? "border-[#ededed]/40" : "border-[rgba(237,237,237,0.08)] hover:border-[rgba(237,237,237,0.16)]"} disabled:opacity-30 bg-[#232325]`}>
                   {sc?.image ? <img src={mediaUrl(sc.image)} alt="" className="h-full w-full object-cover" /> : <span className="text-xs text-[#85858b] font-sans-ui tabular-nums">{i + 1}</span>}
                   {active && <span className="absolute bottom-0 inset-x-0 h-0.5 bg-[#ededed]" />}
@@ -302,6 +391,41 @@ export default function StoryReader({ publicToken }) {
         {story.config.ip_adapter ? ", IP-Adapter" : ""}), voz con {story.config.tts_model} y ambiente sonoro sintetizado proceduralmente.
         Atajos: ← → escenas, espacio reproducir o pausar.
       </p>
+
+      <AlertDialog open={Boolean(confirmDiscard)} onOpenChange={(open) => { if (!open) setConfirmDiscard(null); }}>
+        <AlertDialogContent
+          className="border-[rgba(237,237,237,0.08)] bg-[#19191b]"
+          onCloseAutoFocus={(e) => {
+            if (!confirmedDiscardRef.current) return;
+            e.preventDefault();
+            confirmedDiscardRef.current = false;
+            editButtonRef.current?.focus();
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-sans-ui text-[#ededed]">Descartar cambios</AlertDialogTitle>
+            <AlertDialogDescription className="font-sans-ui text-[#a1a1a6]">
+              Tienes cambios sin guardar en esta escena. Si continúas, se perderán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              data-testid="keep-editing-button"
+              onClick={() => { confirmedDiscardRef.current = false; }}
+              className="h-10 border-[rgba(237,237,237,0.16)] bg-transparent text-[#ededed] hover:bg-[#232325] sm:h-8"
+            >
+              Seguir editando
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="discard-changes-button"
+              onClick={confirmDiscardChanges}
+              className="h-10 bg-[#ededed] text-[#141415] hover:bg-[#d4d4d4] sm:h-8"
+            >
+              Descartar cambios
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

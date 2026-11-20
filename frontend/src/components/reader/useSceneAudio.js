@@ -64,20 +64,30 @@ export function useSceneAudio(scene, { autoplay, onVoiceEnded }) {
   useEffect(() => { voice.current.volume = voiceVolume; }, [voiceVolume]);
   useEffect(() => { ambient.current.volume = ambientVolume; }, [ambientVolume]);
 
-  const play = useCallback(() => voice.current?.src && voice.current.play().catch(() => {}), []);
+  // Replaying the narration also brings the ambient back, but only through the
+  // sync effect (ambientOn is its single source of truth); no scene = no ambient.
+  const play = useCallback(() => {
+    if (ambientSrc) setAmbientOn(true);
+    return voice.current?.src && voice.current.play().catch(() => {});
+  }, [ambientSrc]);
   const pause = useCallback(() => voice.current.pause(), []);
+  // Manual stop (panel button or autoplay off) always silences both sources.
+  // Natural completion goes through v.onended -> onVoiceEnded and never calls this.
   const stop = useCallback(() => {
     voice.current.pause();
     voice.current.currentTime = 0;
     setTime(0);
     setState("idle");
+    ambient.current.pause();
+    setAmbientOn(false);
   }, []);
   const seek = useCallback((t) => { voice.current.currentTime = t; setTime(t); }, []);
   const toggleAmbient = useCallback(() => {
     if (!ambient.current?.src && !ambientSrc) return;
     setAmbientOn((v) => !v);
   }, [ambientSrc]);
-  const stopAll = useCallback(() => { stop(); ambient.current.pause(); setAmbientOn(false); }, [stop]);
+  // Keep the public alias for StoryReader's autoplay switch without duplicating work.
+  const stopAll = stop;
 
   return {
     ready: Boolean(voiceSrc), state, time, duration, play, pause, stop, seek,
